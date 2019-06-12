@@ -163,7 +163,7 @@ and can be run "offline". (e.g. 'generate mnemonic')
 
 Usage:
   cardano-wallet launch [--network=STRING] [(--port=INT | --random-port)] [--bridge-port=INT] [--state-dir=DIR]
-  cardano-wallet serve [--network=STRING] [(--port=INT | --random-port)] [--bridge-port=INT] [--database=FILE]
+  cardano-wallet serve [--network=STRING] [(--port=INT | --random-port | [--socket=STRING])] [--bridge-port=INT] [--database=FILE]
   cardano-wallet mnemonic generate [--size=INT]
   cardano-wallet wallet list [--port=INT]
   cardano-wallet wallet create [--port=INT] <name> [--address-pool-gap=INT]
@@ -183,6 +183,7 @@ Options:
   --payment <PAYMENT>         address to send to and amount to send separated by @: '<amount>@<address>'
   --port <INT>                port used for serving the wallet API [default: 8090]
   --random-port               serve wallet API on any available port (conflicts with --port)
+  --socket <STRING>           socket fd/pipe name used for serving the wallet API
   --size <INT>                number of mnemonic words to generate [default: 15]
   --state <STRING>            address state: either used or unused
   --state-dir <DIR>           write wallet state (blockchain and database) to this directory
@@ -480,6 +481,7 @@ execLaunch tracer network stateDir bridgePort listen = do
             , case listen of
                 ListenOnRandomPort -> ["--random-port"]
                 ListenOnPort port  -> ["--port", showT port]
+                ListenOnSocketFD fd -> ["--socket", showT fd]
             , [ "--bridge-port", showT bridgePort ]
             , maybe [] (\d -> ["--database", d </> "wallet.db"]) stateDir
             ]
@@ -521,15 +523,17 @@ parseOptionalArg args option
 parseAllArgs :: FromText a => Arguments -> Option -> IO (NE.NonEmpty a)
 parseAllArgs = parseAllArgsWith cli
 
--- | Parse and convert the `--port` or `--random-port` option into a 'Listen'
--- data-type.
+-- | Parse and convert the `--port`, `--random-port`, or `--socket` options into
+-- a 'Listen' data-type.
 parseWalletListen :: Arguments -> IO Listen
 parseWalletListen args = do
     let useRandomPort = args `isPresent` longOption "random-port"
     walletPort <- args `parseArg` longOption "port"
-    pure $ case (useRandomPort, walletPort) of
-        (True, _) -> ListenOnRandomPort
-        (False, port) -> ListenOnPort port
+    walletSocket <- args `parseOptionalArg` longOption "socket"
+    pure $ case (useRandomPort, walletPort, walletSocket) of
+        (_, _, Just fd) -> Server.ListenOnSocketFD fd
+        (True, _, _) -> ListenOnRandomPort
+        (False, port, _) -> ListenOnPort port
 
 -- | Initialize a state directory to store blockchain data such as blocks or
 -- the wallet database.

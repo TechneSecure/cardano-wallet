@@ -8,6 +8,8 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 -- |
 -- Copyright: © 2018-2019 IOHK
 -- License: MIT
@@ -77,9 +79,7 @@ import Cardano.Wallet.Primitive.Types
     , WalletMetadata (..)
     )
 import Control.Exception
-    ( bracket )
-import Control.Monad
-    ( void )
+    ( bracket, handleJust )
 import Control.Monad.IO.Class
     ( liftIO )
 import Control.Monad.Trans.Except
@@ -115,7 +115,18 @@ import Network.HTTP.Media.RenderHeader
 import Network.HTTP.Types.Header
     ( hContentType )
 import Network.Socket
-    ( Socket, close )
+    ( Family (AF_UNIX)
+    , Socket
+    , Socket
+    , SocketStatus (Bound)
+    , SocketType (Stream)
+    , close
+    , close
+    , defaultProtocol
+    , listen
+    , maxListenQueue
+    , mkSocket
+    )
 import Network.Wai.Handler.Warp
     ( Port )
 import Network.Wai.Middleware.ServantError
@@ -138,6 +149,8 @@ import Servant
     )
 import Servant.Server
     ( Handler (..), ServantErr (..) )
+import System.IO.Error
+    ( isUserError )
 
 import qualified Cardano.Wallet as W
 import qualified Data.Aeson as Aeson
@@ -153,6 +166,8 @@ data Listen
       -- ^ Listen on given TCP port
     | ListenOnRandomPort
       -- ^ Listen on an unused TCP port, selected at random
+    | ListenOnSocketFD Int
+      -- ^ Listen on a unix stream socket file descriptor.
     deriving (Show, Eq)
 
 -- | Start the application server
@@ -163,8 +178,8 @@ start
     -> WalletLayer (SeqState t) t
     -> IO ()
 start onStartup portOpt wl =
-    void $ withListeningSocket portOpt $ \(port, socket) ->
-        startOnSocket (mkWarpSettings onStartup port) socket wl
+    withListeningSocket portOpt $ \(port', socket) ->
+        startOnSocket (mkWarpSettings onStartup port') socket wl
 
 -- | Start the application server, using the given settings and a bound socket.
 startOnSocket
@@ -209,9 +224,27 @@ withListeningSocket portOpt = bracket acquire release
     acquire = case portOpt of
         ListenOnPort port -> (port,) <$> bindPortTCP port hostPreference
         ListenOnRandomPort -> bindRandomPortTCP hostPreference
+        ListenOnSocketFD fd -> (0,) <$> useSocketFd fd
     release (_, socket) = liftIO $ close socket
     -- TODO: make configurable, default to secure for now.
     hostPreference = "127.0.0.1"
+
+
+useSocketFd :: Int -> IO Socket
+useSocketFd fd = do
+    -- note: with network-3.x, this will simply be mkSocket (fromIntegral fd)
+    sock <- mkSocket (fromIntegral fd) AF_UNIX Stream defaultProtocol Bound
+    daedalusListen sock
+    pure sock
+  where
+    -- Normally when inheriting a socket from the parent process, it should
+    -- already be listening, to prevent race conditions.
+    -- However nodejs (Daedalus) can't do that.
+    -- So we do the listen here, and ignore the exception that will occur if the
+    -- socket is already listening.
+    daedalusListen sock = handleJust alreadyListening pure $
+        listen sock maxListenQueue
+    alreadyListening e = if isUserError e then Just () else Nothing
 
 {-------------------------------------------------------------------------------
                                     Wallets

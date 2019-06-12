@@ -152,6 +152,7 @@ test-suite integration
     , http-types
     , iohk-monitoring
     , memory
+    , network
     , persistent
     , persistent-sqlite
     , process
@@ -162,6 +163,7 @@ test-suite integration
     , text-class
     , time
     , transformers
+    , unix
     , warp
   type:
      exitcode-stdio-1.0

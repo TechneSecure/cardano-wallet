@@ -94,6 +94,7 @@
             (hsPkgs.http-types)
             (hsPkgs.iohk-monitoring)
             (hsPkgs.memory)
+            (hsPkgs.network)
             (hsPkgs.persistent)
             (hsPkgs.persistent-sqlite)
             (hsPkgs.process)
@@ -104,6 +105,7 @@
             (hsPkgs.text-class)
             (hsPkgs.time)
             (hsPkgs.transformers)
+            (hsPkgs.unix)
             (hsPkgs.warp)
             ];
           };

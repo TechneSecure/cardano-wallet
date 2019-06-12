@@ -4,12 +4,44 @@ module Test.Integration.Scenario.CLI.Server
 
 import Prelude
 
+import Control.Concurrent
+    ( threadDelay )
+import Network.HTTP.Client
+    ( Manager
+    , defaultManagerSettings
+    , httpLbs
+    , managerRawConnection
+    , newManager
+    , parseRequest
+    , responseStatus
+    , socketConnection
+    )
+import Network.HTTP.Types
+    ( Status (statusCode) )
+import Network.Socket
+    ( Family (AF_UNIX)
+    , SockAddr (..)
+    , SocketType (Stream)
+    , bind
+    , connect
+    , defaultProtocol
+    , listen
+    , maxListenQueue
+    , socket
+    , socketToHandle
+    )
 import System.Directory
-    ( listDirectory, removeDirectory )
+    ( listDirectory, removeDirectory, removeFile )
 import System.Exit
     ( ExitCode (..) )
+import System.IO
+    ( IOMode (..) )
 import System.IO.Temp
-    ( withSystemTempDirectory )
+    ( withSystemTempDirectory, withSystemTempFile )
+import System.Posix.IO
+    ( handleToFd )
+import System.Posix.Types
+    ( Fd (..) )
 import System.Process
     ( CreateProcess (..)
     , StdStream (..)
@@ -20,7 +52,7 @@ import System.Process
     , withCreateProcess
     )
 import Test.Hspec
-    ( Spec, describe, it, shouldContain, shouldReturn )
+    ( Spec, describe, it, shouldBe, shouldContain, shouldReturn )
 
 import qualified Data.Text.IO as TIO
 
@@ -39,10 +71,38 @@ spec = do
             ls `shouldContain` ["wallet.db"]
 
     describe "DaedalusIPC" $ do
-        it "should reply with the port when asked" $ do
+        it "should be able to make a request" $ do
             (_, _, _, ph) <-
                 createProcess (proc "test/integration/js/mock-daedalus.js" [])
             waitForProcess ph `shouldReturn` ExitSuccess
+
+    describe "Listening on socket file descriptor" $ do
+        it "should not fail" $ withSystemTempFile "haskell.sock" $ \f _ -> do
+            removeFile f
+            sock <- socket AF_UNIX Stream defaultProtocol
+            bind sock (SockAddrUnix f)
+            listen sock maxListenQueue
+            handle <- socketToHandle sock ReadWriteMode
+            Fd fd <- handleToFd handle
+
+            let cmd = proc' "cardano-wallet-launcher" ["--wallet-server-socket", show fd ]
+                cmd' = cmd { std_in = NoStream, close_fds = False }
+
+            withCreateProcess cmd' $ \_ _ _ ph -> do
+                request <- parseRequest "http://wallet/v2/wallets"
+                manager <- newManagerSocket f
+                response <- httpLbs request manager
+                statusCode (responseStatus response) `shouldBe` 200
+                terminateProcess ph
+
+newManagerSocket :: FilePath -> IO Manager
+newManagerSocket f = do
+    let mkConn _ _ _ = do
+            sock <- socket AF_UNIX Stream defaultProtocol
+            connect sock (SockAddrUnix f)
+            socketConnection sock 8192
+    newManager $ defaultManagerSettings
+        { managerRawConnection = pure mkConn }
 
 withTempDir :: (FilePath -> IO a) -> IO a
 withTempDir = withSystemTempDirectory "integration-state"
