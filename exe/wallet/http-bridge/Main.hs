@@ -90,8 +90,6 @@ import Network.Wai.Handler.Warp
     ( setBeforeMainLoop )
 import System.Console.Docopt
     ( Docopt, longOption )
-import Text.Heredoc
-    ( here )
 
 import qualified Cardano.Wallet as Wallet
 import qualified Cardano.Wallet.Api.Server as Server
@@ -139,24 +137,27 @@ cliDefinition = makeCli
     cliExamples
 
 cliCommands :: String
-cliCommands = [here|
-  cardano-wallet launch [--network=STRING] [(--port=INT | --random-port)] [--backend-port=INT] [--state-dir=DIR] [(--quiet | --verbose )]
-  cardano-wallet serve  [--network=STRING] [(--port=INT | --random-port)] [--backend-port=INT] [--database=FILE] [(--quiet | --verbose )]
-|]
+cliCommands = unlines
+    [ ""
+    , "  cardano-wallet launch [--network=STRING] [(--port=INT | --random-port)] [--backend-port=INT] [--state-dir=DIR] [(--quiet | --verbose )]"
+    , "  cardano-wallet serve  [--network=STRING] [(--port=INT | --random-port)] [--backend-port=INT] [--database=FILE] [(--quiet | --verbose )]"
+    ]
 
 cliOptions :: String
-cliOptions = [here|
-  --backend-port <INT>      port used for communicating with the HTTP bridge [default: 8080]
-|]
+cliOptions = unlines
+    [ ""
+    , "  --backend-port <INT>      port used for communicating with the HTTP bridge [default: 8080]"
+    ]
 
 cliExamples :: String
-cliExamples = [here|
-  # Launch and monitor a wallet server and its associated chain producer
-  cardano-wallet launch --network mainnet --random-port --state-dir .state-dir
-
-  # Start only a wallet server and connect it to an already existing chain producer
-  cardano-wallet serve --backend-port 8080
-|]
+cliExamples = unlines
+    [ ""
+    , "  # Launch and monitor a wallet server and its associated chain producer"
+    , "  cardano-wallet launch --network mainnet --random-port --state-dir .state-dir"
+    , ""
+    , "  # Start only a wallet server and connect it to an already existing chain producer"
+    , "  cardano-wallet serve --backend-port 8080"
+    ]
 
 {-------------------------------------------------------------------------------
                                 Launching

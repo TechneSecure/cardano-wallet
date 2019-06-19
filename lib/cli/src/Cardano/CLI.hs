@@ -213,8 +213,6 @@ import System.IO
     , stdout
     , utf8
     )
-import Text.Heredoc
-    ( here )
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Encode.Pretty as Aeson
@@ -276,51 +274,55 @@ makeCli cliCommandsSpecific cliOptionsSpecific cliExamplesSpecific =
         <> cliExamplesGeneric
 
 cliHeader :: String
-cliHeader = [here|Cardano Wallet CLI.
-
-The CLI is a proxy to the wallet server, which is required for most
-commands. Commands are turned into corresponding API calls, and submitted
-to an up-and-running server. Some commands do not require an active server
-and can be run "offline". (e.g. 'generate mnemonic')
-
-    ⚠️  Options are positional (--a --b is not equivalent to --b --a) ! ⚠️
-|]
+cliHeader = unlines
+    [ "Cardano Wallet CLI. "
+    , ""
+    , "The CLI is a proxy to the wallet server, which is required for most"
+    , "commands. Commands are turned into corresponding API calls, and submitted"
+    , "to an up-and-running server. Some commands do not require an active server"
+    , "and can be run \"offline\". (e.g. 'generate mnemonic')"
+    , ""
+    , "    ⚠️  Options are positional (--a --b is not equivalent to --b --a) ! ⚠️"
+    ]
 
 cliCommandsGeneric :: String
-cliCommandsGeneric = [here|
-  cardano-wallet mnemonic generate [--size=INT]
-  cardano-wallet wallet list [--port=INT]
-  cardano-wallet wallet create [--port=INT] <name> [--address-pool-gap=INT]
-  cardano-wallet wallet get [--port=INT] <wallet-id>
-  cardano-wallet wallet update [--port=INT] <wallet-id> --name=STRING
-  cardano-wallet wallet delete [--port=INT] <wallet-id>
-  cardano-wallet transaction create [--port=INT] <wallet-id> --payment=PAYMENT...
-  cardano-wallet address list [--port=INT] [--state=STRING] <wallet-id>
-  cardano-wallet -h | --help
-  cardano-wallet --version
-|]
+cliCommandsGeneric = unlines
+    [ ""
+    , "  cardano-wallet mnemonic generate [--size=INT]"
+    , "  cardano-wallet wallet list [--port=INT]"
+    , "  cardano-wallet wallet create [--port=INT] <name> [--address-pool-gap=INT]"
+    , "  cardano-wallet wallet get [--port=INT] <wallet-id>"
+    , "  cardano-wallet wallet update [--port=INT] <wallet-id> --name=STRING"
+    , "  cardano-wallet wallet delete [--port=INT] <wallet-id>"
+    , "  cardano-wallet transaction create [--port=INT] <wallet-id> --payment=PAYMENT..."
+    , "  cardano-wallet address list [--port=INT] [--state=STRING] <wallet-id>"
+    , "  cardano-wallet -h | --help"
+    , "  cardano-wallet --version"
+    ]
 
 cliOptionsGeneric :: String
-cliOptionsGeneric = [here|
-  --address-pool-gap <INT>  number of unused consecutive addresses to keep track of [default: 20]
-  --database <FILE>         use this file for storing wallet state
-  --network <STRING>        testnet or mainnet [default: testnet]
-  --payment <PAYMENT>       address to send to and amount to send separated by @: '<amount>@<address>'
-  --port <INT>              port used for serving the wallet API [default: 8090]
-  --quiet                   suppress all log output apart from errors
-  --random-port             serve wallet API on any available port (conflicts with --port)
-  --size <INT>              number of mnemonic words to generate [default: 15]
-  --state <STRING>          address state: either used or unused
-  --state-dir <DIR>         write wallet state (blockchain and database) to this directory
-  --verbose                 display debugging information in the log output
-|]
+cliOptionsGeneric = unlines
+    [ ""
+    , "  --address-pool-gap <INT>  number of unused consecutive addresses to keep track of [default: 20]"
+    , "  --database <FILE>         use this file for storing wallet state"
+    , "  --network <STRING>        testnet or mainnet [default: testnet]"
+    , "  --payment <PAYMENT>       address to send to and amount to send separated by @: '<amount>@<address>'"
+    , "  --port <INT>              port used for serving the wallet API [default: 8090]"
+    , "  --quiet                   suppress all log output apart from errors"
+    , "  --random-port             serve wallet API on any available port (conflicts with --port)"
+    , "  --size <INT>              number of mnemonic words to generate [default: 15]"
+    , "  --state <STRING>          address state: either used or unused"
+    , "  --state-dir <DIR>         write wallet state (blockchain and database) to this directory"
+    , "  --verbose                 display debugging information in the log output"
+    ]
 
 cliExamplesGeneric :: String
-cliExamplesGeneric = [here|
-  # Create a transaction and send 22 lovelace from wallet-id to specified address
-  cardano-wallet transaction create 2512a00e9653fe49a44a5886202e24d77eeb998f \
-    --payment 22@Ae2tdPwUPEZ...nRtbfw6EHRv1D
-|]
+cliExamplesGeneric = unlines
+    [ ""
+    , "  # Create a transaction and send 22 lovelace from wallet-id to specified address"
+    , "  cardano-wallet transaction create 2512a00e9653fe49a44a5886202e24d77eeb998f \\"
+    , "    --payment 22@Ae2tdPwUPEZ...nRtbfw6EHRv1D"
+    ]
 
 {-------------------------------------------------------------------------------
                               CLI Execution
@@ -894,4 +896,3 @@ decodeError bytes = do
 -- | Show a data-type through its 'ToText' instance
 showT :: ToText a => a -> String
 showT = T.unpack . toText
-

@@ -97,8 +97,6 @@ import Servant.Client
     ( BaseUrl (..), Scheme (..) )
 import System.Console.Docopt
     ( Docopt, longOption )
-import Text.Heredoc
-    ( here )
 
 import qualified Cardano.Wallet as Wallet
 import qualified Cardano.Wallet.Api.Server as Server
@@ -143,33 +141,36 @@ cliDefinition = makeCli
     cliExamples
 
 cliCommands :: String
-cliCommands = [here|
-  cardano-wallet launch [--network=STRING] [(--port=INT | --random-port)] [--backend-port=INT] [--state-dir=DIR] [(--quiet | --verbose )] --genesis-hash=HASH --genesis-block=PATH --node-config=PATH --node-secret=PATH
-  cardano-wallet serve  [--network=STRING] [(--port=INT | --random-port)] [--backend-port=INT] [--database=FILE] [(--quiet | --verbose )] --genesis-hash=HASH
-|]
+cliCommands = unlines
+    [ ""
+    , "    cardano-wallet launch [--network=STRING] [(--port=INT | --random-port)] [--backend-port=INT] [--state-dir=DIR] [(--quiet | --verbose )] --genesis-hash=HASH --genesis-block=PATH --node-config=PATH --node-secret=PATH"
+    , "  cardano-wallet serve  [--network=STRING] [(--port=INT | --random-port)] [--backend-port=INT] [--database=FILE] [(--quiet | --verbose )] --genesis-hash=HASH"
+    ]
 
 cliOptions :: String
-cliOptions = [here|
-  --backend-port <INT>      port used for communicating with the backend node [default: 8081]
-  --genesis-block <FILE>    path to genesis block
-  --genesis-hash <HASH>     hash of genesis block
-  --node-config <FILE>      path to node configuration (general)
-  --node-secret <FILE>      path to node configuration (secret)
-|]
+cliOptions = unlines
+    [ ""
+    , "  --backend-port <INT>      port used for communicating with the backend node [default: 8081]"
+    , "  --genesis-block <FILE>    path to genesis block"
+    , "  --genesis-hash <HASH>     hash of genesis block"
+    , "  --node-config <FILE>      path to node configuration (general)"
+    , "  --node-secret <FILE>      path to node configuration (secret)"
+    ]
 
 cliExamples :: String
-cliExamples = [here|
-  # Launch and monitor a wallet server and its associated chain producer
-  cardano-wallet launch \
-    --genesis-hash=dba597bee5f0987efbf56f6bd7f44c38158a7770d0cb28a26b5eca40613a7ebd \
-    --genesis-block=block0.bin \
-    --node-config config.yaml \
-    --backend-port 8081 \
-    --node-secret secret.yaml
-
-  # Start only a wallet server and connect it to an already existing chain producer
-  cardano-wallet serve --backend-port 8081
-|]
+cliExamples = unlines
+    [ ""
+    , "  # Launch and monitor a wallet server and its associated chain producer"
+    , "  cardano-wallet launch \\"
+    , "    --genesis-hash=dba597bee5f0987efbf56f6bd7f44c38158a7770d0cb28a26b5eca40613a7ebd \\"
+    , "    --genesis-block=block0.bin \\"
+    , "    --node-config config.yaml \\"
+    , "    --backend-port 8081 \\"
+    , "    --node-secret secret.yaml"
+    , ""
+    , "  # Start only a wallet server and connect it to an already existing chain producer"
+    , "  cardano-wallet serve --backend-port 8081"
+    ]
 
 {-------------------------------------------------------------------------------
                                 Launching
