@@ -18,6 +18,11 @@ flag development
     default: False
     manual: True
 
+flag sqlite
+    description: Enable SQLite database backend
+    default: True
+    manual: False
+
 -- Dummy library sadly necessary for 'shc' to compute
 -- code-coverage correctly ¯\_(ツ)_/¯
 library
@@ -55,6 +60,8 @@ executable cardano-wallet
       exe/wallet/http-bridge
   main-is:
       Main.hs
+  if (!flag(sqlite))
+    cpp-options: -DNO_SQLITE
 
 executable cardano-wallet-jormungandr
   default-language:
@@ -90,3 +97,5 @@ executable cardano-wallet-jormungandr
       exe/wallet/jormungandr
   main-is:
       Main.hs
+  if (!flag(sqlite))
+    cpp-options: -DNO_SQLITE

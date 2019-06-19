@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
@@ -22,8 +23,10 @@ module Cardano.Wallet.Jormungandr.Compatibility
 
 import Prelude
 
+#ifdef NO_SQLITE
 import Cardano.Wallet.DB.Sqlite
     ( PersistTx (..) )
+#endif
 import Cardano.Wallet.Jormungandr.Binary
     ( Put, decodeLegacyAddress, putTx, runPut, singleAddressFromKey )
 import Cardano.Wallet.Jormungandr.Environment
@@ -94,6 +97,7 @@ instance DefineTx (Jormungandr network) where
         blake2b256 =
             Hash . BA.convert . hash @_ @Blake2b_256 . BL.toStrict . runPut
 
+#ifdef NO_SQLITE
 instance PersistTx (Jormungandr network) where
     resolvedInputs = map (second Just) . inputs
     mkTx inps = Tx ((second unsafeFromMaybe) <$> inps)
@@ -104,6 +108,7 @@ instance PersistTx (Jormungandr network) where
             \without any amount: " <> show inps)
             amt
             isJust
+#endif
 
 instance forall n. KnownNetwork n => KeyToAddress (Jormungandr n) where
     keyToAddress key = singleAddressFromKey (Proxy @n) (getKey key)

@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -23,8 +24,10 @@ module Cardano.Wallet.HttpBridge.Compatibility
 
 import Prelude
 
+#ifdef NO_SQLITE
 import Cardano.Wallet.DB.Sqlite
     ( PersistTx (..) )
+#endif
 import Cardano.Wallet.HttpBridge.Binary
     ( decodeAddressPayload, encodeProtocolMagic, encodeTx )
 import Cardano.Wallet.HttpBridge.Environment
@@ -79,9 +82,11 @@ instance DefineTx (HttpBridge network) where
         blake2b256 =
             Hash . BA.convert . hash @_ @Blake2b_256 . CBOR.toStrictByteString
 
+#ifdef NO_SQLITE
 instance PersistTx (HttpBridge network) where
     resolvedInputs = flip zip (repeat Nothing) . W.inputs
     mkTx inps = W.Tx (fst <$> inps)
+#endif
 
 -- | Encode a public key to a (Byron / Legacy) Cardano 'Address'. This is mostly
 -- dubious CBOR serializations with no data attributes.
@@ -151,4 +156,3 @@ block0 = Block
 -- | Hard-coded fee policy for Cardano on Byron
 byronFeePolicy :: FeePolicy
 byronFeePolicy = LinearFee (Quantity 155381) (Quantity 43.946)
-

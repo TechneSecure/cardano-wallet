@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -10,6 +11,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -Wno-unused-binds -Wno-unused-matches #-}
 
 -- |
 -- Copyright: © 2018-2019 IOHK
@@ -100,7 +102,11 @@ import System.Console.Docopt
 
 import qualified Cardano.Wallet as Wallet
 import qualified Cardano.Wallet.Api.Server as Server
+#ifdef NO_SQLITE
+import qualified Cardano.Wallet.DB.MVar as MVar
+#else
 import qualified Cardano.Wallet.DB.Sqlite as Sqlite
+#endif
 import qualified Cardano.Wallet.Jormungandr.Network as Jormungandr
 import qualified Cardano.Wallet.Jormungandr.Transaction as Jormungandr
 import qualified Data.Text as T
@@ -270,5 +276,9 @@ execServe verbosity listen backendPort dbFile block0H _ = do
         -> IO (DBLayer IO s t)
     newDBLayer tracer = do
         tracerDB <- appendName "database" tracer
+#ifdef NO_SQLITE
+        db <- MVar.newDBLayer
+#else
         (_, db) <- Sqlite.newDBLayer tracerDB dbFile
+#endif
         return db
