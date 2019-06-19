@@ -71,6 +71,27 @@ let
         packages.katip.doExactConfig = true;
       }
 
+      # Windows-specific build fixes
+      (pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isWindows {
+        # Vendored sqlite library maybe not working. Need to double check.
+        packages.persistent-sqlite = {
+          flags.use-pkgconfig = true;
+          flags.systemlib = true;
+        };
+
+        # Can't get persistent-sqlite to build -- under cross
+        packages.cardano-wallet.flags.sqlite = false;
+        packages.cardano-wallet-core.flags.sqlite = false;
+
+        # remove some template haskell stuff
+        packages.wai-app-static.postUnpack = ''
+          sed -i -e 's/$(embedFile.*)//g' */Network/Wai/Application/Static.hs
+        '';
+
+        # HLint Annotations mess with remote-iserv.exe and the docopt quasiquoter.
+        # packages.cardano-wallet-http-bridge.setupBuildFlags = pkgs.lib.mkForce [];
+      })
+
       # the iohk-module will supply us with the necessary
       # cross compilation plumbing to make Template Haskell
       # work when cross compiling.  For now we need to
