@@ -1,6 +1,6 @@
 { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
   {
-    flags = { development = false; };
+    flags = { development = false; sqlite = true; };
     package = {
       specVersion = "1.10";
       identifier = { name = "cardano-wallet-core"; version = "2019.6.24"; };
@@ -40,9 +40,6 @@
           (hsPkgs.monad-logger)
           (hsPkgs.network)
           (hsPkgs.path-pieces)
-          (hsPkgs.persistent)
-          (hsPkgs.persistent-sqlite)
-          (hsPkgs.persistent-template)
           (hsPkgs.resourcet)
           (hsPkgs.retry)
           (hsPkgs.servant)
@@ -57,6 +54,10 @@
           (hsPkgs.vector)
           (hsPkgs.wai)
           (hsPkgs.warp)
+          ] ++ (pkgs.lib).optionals (flags.sqlite) [
+          (hsPkgs.persistent)
+          (hsPkgs.persistent-sqlite)
+          (hsPkgs.persistent-template)
           ];
         };
       tests = {
