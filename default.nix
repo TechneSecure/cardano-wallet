@@ -14,8 +14,17 @@ let
   src = iohkLib.cleanSourceHaskell ./.;
 
   inherit (iohkLib.rust-packages.pkgs) jormungandr;
-  cardano-http-bridge = iohkLib.rust-packages.pkgs.callPackage
-    ./nix/cardano-http-bridge.nix { inherit pkgs; };
+  cardano-http-bridge = iohkLib.rust-packages.pkgs.cardano-http-bridge.overrideAttrs (oldAttrs: {
+    version = "0.0.3";
+    src = pkgs.fetchFromGitHub {
+      owner = "KtorZ";
+      repo = "cardano-http-bridge";
+      fetchSubmodules = true;
+      rev = "a0e05390bee29d90daeec958fdce97e08c437143";
+      sha256 = "1ix9b0pp50397g46h9k8axyrh8395a5l7zixsqrsyq90jwkbafa3";
+    };
+    cargoSha256 = "1phiffgcs70rsv1y0ac6lciq384g2f014mn15pjvd02l09nx7k49";
+  });
   cardano-sl-node = import ./nix/cardano-sl-node.nix { inherit pkgs; };
 
   haskellPackages = import ./nix/default.nix {
