@@ -137,6 +137,8 @@ import Network.Wai.Middleware.Logging
     ( newApiLoggerSettings, obfuscateKeys, withApiLogger )
 import Network.Wai.Middleware.ServantError
     ( handleRawError )
+import Numeric.Natural
+    ( Natural )
 import Servant
     ( (:<|>) (..)
     , (:>)
@@ -422,8 +424,14 @@ createTransaction w (ApiT wid) body = do
     selection <- liftHandler $ W.createUnsignedTx w wid outs
     (tx, meta, wit) <- liftHandler $ W.signTx w wid pwd selection
     liftHandler $ W.submitTx w wid (tx, meta, wit)
-    return $ mkApiTransaction (txId @t tx)
-        (fmap Just <$> selection ^. #inputs) (selection ^. #outputs) meta
+    return $ mkApiTransaction
+        (txId @t tx)
+        (fmap Just <$> selection ^. #inputs)
+        (selection ^. #outputs)
+        meta
+        (Quantity 0)
+        Nothing
+
 
 mkApiTransaction
     :: forall t.
@@ -431,12 +439,14 @@ mkApiTransaction
     -> [(TxIn, Maybe TxOut)]
     -> [TxOut]
     -> W.TxMeta
+    -> Quantity "slot" Natural
+    -> Maybe ApiBlockData
     -> ApiTransaction t
-mkApiTransaction txid ins outs meta = ApiTransaction
+mkApiTransaction txid ins outs meta depth mtime = ApiTransaction
     { id = ApiT txid
     , amount = meta ^. #amount
-    , insertedAt = Nothing
-    , depth = Quantity 0
+    , insertedAt = mtime
+    , depth = depth
     , direction = ApiT (meta ^. #direction)
     , inputs = NE.fromList
         [ApiTxInput (fmap coerceTxOut o) (ApiT i) | (i, o) <- ins]
@@ -452,9 +462,8 @@ mkApiTransaction txid ins outs meta = ApiTransaction
 -- layer.
 mkApiTransactionFromInfo :: TransactionInfo -> ApiTransaction t
 mkApiTransactionFromInfo (TransactionInfo txid ins outs meta depth txtime) =
-    apiTx { depth, insertedAt }
+    mkApiTransaction txid ins outs meta depth insertedAt
   where
-    apiTx = mkApiTransaction txid ins outs meta
     insertedAt = Just (ApiBlockData txtime (ApiT (meta ^. #slotId)))
 
 listTransactions
